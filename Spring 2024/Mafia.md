@@ -1,21 +1,23 @@
 # Mafia (web) from xss.pwnfunction.com
 
-We look at the webpage and see that access to each directory has the following format:
-“https://directory.web.actf.co/<number>.html” with <number> being a number between 1 and 5000
-
-I created a web scraper in python to traverse through all these websites quicker than I could click on each one
+Our goal is to pop an alert(1337) on this page, by using xss. We are given the following html code within the webpage.
 
 ```
-import requests
-
-for x in range(5000):
-  link = 'https://directory.web.actf.co/'
-  link += str(x)
-  link += '.html'
-  
-  r = requests.get(link)
-  if('{' in r.text):
-    print(r.text)
+/* Challenge */
+mafia = (new URL(location).searchParams.get('mafia') || '1+1')
+mafia = mafia.slice(0, 50)
+mafia = mafia.replace(/[\`\'\"\+\-\!\\\[\]]/gi, '_')
+mafia = mafia.replace(/alert/g, '_')
+eval(mafia)
 ```
 
-I check if the text has a bracket, because that indicates that the website holds the flag, so I print it out
+We see that our input must be 50 characters or under, cannot contain `'"+-!\[] (will get turned in to underscores), and cannot contain the word "alert" (will get turned into underscores also). 
+
+I learned about hash in a URL. This hash is not sent to the server, but we can still access it after the page is loaded. If we have www.exampleurl.com#hash and we run the command location.hash in the console, '#hash' will be returned
+
+We can use this by evaluating the hash (we must use slice(1) to extract the hash that we want (the javascript slice function can take in two parameters -- one for start, one for end -- )
+
+Our final url is
+```
+https://sandbox.pwnfunction.com/warmups/mafia.html?mafia=eval(location.hash.slice(0))#alert(1337)
+```
